@@ -1,0 +1,20 @@
+spring:
+  h2:
+    console:
+      enabled: true
+
+logging:
+  level:
+    edu.itc.shop: DEBUG
+    org.springframework.jdbc.core: DEBUG
+    org.springframework.jdbc.core.StatementCreatorUtils: TRACE
+
+shop:
+  currency: USD
+  tax-rate: 0.10
+  low-stock-threshold: 5
+
+management:
+  endpoint:
+    health:
+      show-details: always
