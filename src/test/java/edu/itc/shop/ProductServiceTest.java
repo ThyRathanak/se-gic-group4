@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import edu.itc.shop.service.InsufficientStockException;
 import edu.itc.shop.service.ProductService;
 import edu.itc.shop.repository.ProductRepository;
 
@@ -23,7 +24,7 @@ class ProductServiceTest {
         int before1 = repo.findById(1).orElseThrow().stock();
         int before2 = repo.findById(2).orElseThrow().stock();
 
-        assertThrows(IllegalStateException.class, () -> service.restock(1, 2, 1_000));
+        assertThrows(InsufficientStockException.class, () -> service.restock(1, 2, 1_000));
 
         assertEquals(before1, repo.findById(1).orElseThrow().stock());
         assertEquals(before2, repo.findById(2).orElseThrow().stock());
