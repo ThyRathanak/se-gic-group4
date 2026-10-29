@@ -1,11 +1,16 @@
-
 package edu.itc.shop.repository;
 
 import edu.itc.shop.domain.Product;
+
+import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -44,18 +49,32 @@ public class ProductRepository {
                 .optional();
     }
 
-    public Product insert(String name, java.math.BigDecimal price, int stock) {
-        return jdbc.sql(
-                "INSERT INTO product (name, price, stock) " +
-                        "VALUES (:name, :price, :stock) " +
-                        "RETURNING id, name, price, stock")
+    public Product insert(String name, BigDecimal price, int stock) {
+        String sql = """
+            INSERT INTO product (name, price, stock)
+            VALUES (:name, :price, :stock)
+            """;
+
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+
+        jdbc.sql(sql)
                 .param("name", name)
                 .param("price", price)
                 .param("stock", stock)
-                .query(Product.class)
-                .single();
-    }
+                .update(keyHolder, "id");
 
+        Number key = keyHolder.getKey();
+
+        if (key == null) {
+            throw new IllegalStateException(
+                    "Failed to retrieve generated product ID");
+        }
+
+        return findById(key.longValue())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Inserted product could not be found"));
+    }
+   
     public int updateStock(long id, int delta) {
         return jdbc.sql(
                 "UPDATE product SET stock = stock + :delta " +
