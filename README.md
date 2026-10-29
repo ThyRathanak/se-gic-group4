@@ -163,6 +163,35 @@ Spring Boot can configure a DataSource automatically because
 the JDBC and H2 dependencies are present and the required
 auto-configuration conditions are satisfied.
 
+## Task 5: JSP, Profiles, Actuator and Logging
+
+### JSP pages
+- Product list: `/products`
+- Create product: `/products/new`
+- REST API remains available under `/api/products`.
+
+### Profiles
+- `dev`: H2 console enabled and DEBUG logging.
+- `prod`: H2 console disabled and INFO logging.
+- Production datasource settings use DB_URL, DB_USERNAME and DB_PASSWORD.
+
+### Monitoring
+- `/actuator/health`
+- `/actuator/info`
+- `/actuator/metrics`
+- `/actuator/loggers`
+
+### Logging and timing
+- Request IDs are stored in MDC and included in console logs.
+- Product creation is logged at INFO.
+- Invalid form submissions are logged at WARN.
+- TimingAspect logs service method execution time at DEBUG.
+
+### Startup observations
+- Dev profile startup output: [paste the actual startup lines here].
+- Prod profile startup output: [paste the actual startup lines here].
+- H2 console enabled in dev: [record observed result].
+- H2 console disabled in prod: [record observed result].
 
 
 
