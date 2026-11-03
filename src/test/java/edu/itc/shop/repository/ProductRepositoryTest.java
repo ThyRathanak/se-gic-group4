@@ -10,14 +10,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.JdbcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import edu.itc.shop.domain.Product;
 
-@SpringBootTest
-@ActiveProfiles("test")
 @JdbcTest
+@ActiveProfiles("test")
 @Import(ProductRepository.class)
 class ProductRepositoryTest {
 
