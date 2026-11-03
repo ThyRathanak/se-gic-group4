@@ -12,3 +12,9 @@ VALUES ('Monitor', 220.00, 15);
 
 INSERT INTO product (name, price, stock)
 VALUES ('Headphones', 65.00, 25);
+
+INSERT INTO customer (name, email)
+VALUES
+    ('Dara Sok', 'dara@example.com'),
+    ('Sophea Chan', 'sophea@example.com'),
+    ('Rathanak Thy', 'rathanak@example.com');
