@@ -1,5 +1,5 @@
 package edu.itc.shop.domain;
 
-public class OrderStatus {
-    
+public enum OrderStatus {
+    NEW, PAID, SHIPPED, CANCELLED
 }

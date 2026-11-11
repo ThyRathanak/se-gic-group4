@@ -30,9 +30,15 @@ spring:
     properties:
       hibernate:
         generate_statistics: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
   h2:
     console:
-      enabled: true               # http://localhost:8080/h2-console
+      enabled: true              # http://localhost:8080/h2-console
+  sql:
+    init:
+      mode: never
 logging:
   level:
     org.hibernate.SQL: DEBUG

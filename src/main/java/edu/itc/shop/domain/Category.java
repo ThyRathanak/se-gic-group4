@@ -1,5 +1,5 @@
 package edu.itc.shop.domain;
 
-public class Category {
-    
+public enum Category {
+    BOOKS, HARDWARE, TOYS, FOOD
 }

@@ -5,6 +5,6 @@ import java.math.BigDecimal;
 
 public record ProductDto(long id, String name, BigDecimal price, int stock) {
     public static ProductDto from(Product p) {
-        return new ProductDto(p.id(), p.name(), p.price(), p.stock());
+        return new ProductDto(p.getId(), p.getName(), p.getPrice().amount(), p.getStock());
     }
 }
