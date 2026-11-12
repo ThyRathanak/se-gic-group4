@@ -1,0 +1,51 @@
+package edu.itc.shop;
+
+import edu.itc.shop.service.ReportService;
+import edu.itc.shop.support.QueryCounter;
+import edu.itc.shop.support.TestData;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@SpringBootTest(properties = {
+        "spring.jpa.properties.hibernate.default_batch_fetch_size=32"
+})
+class ProductBatchFetchTest {
+
+    @Autowired
+    private ReportService reportService;
+
+    @Autowired
+    private TestData testData;
+
+    @Autowired
+    private QueryCounter queryCounter;
+
+    @BeforeEach
+    void setUp() {
+        testData.paidOrdersWithDistinctProducts(50, 3);
+    }
+
+    @Test
+    void batchFetchesProductsAndOrderLines() {
+        queryCounter.reset();
+
+        Map<Long, List<String>> result =
+                reportService.productNamesPerPaidOrderBatch();
+
+        assertEquals(50, result.size());
+        assertEquals(3, result.values().iterator().next().size());
+
+        System.out.println(
+                "Batch product fetching: "
+                        + queryCounter.count()
+                        + " SQL statements"
+        );
+    }
+}
