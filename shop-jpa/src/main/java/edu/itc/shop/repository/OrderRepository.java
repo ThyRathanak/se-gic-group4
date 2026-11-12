@@ -5,6 +5,7 @@ import edu.itc.shop.order.OrderStatus;
 import edu.itc.shop.web.dto.OrderSummary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +14,14 @@ import java.util.List;
 import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
+
+    List<Order> findByStatus(OrderStatus status);
+
+    @Query("select distinct o from Order o join fetch o.lines where o.status = :status")
+    List<Order> findByStatusWithLines(@Param("status") OrderStatus status);
+
+    @EntityGraph(attributePaths = {"lines", "lines.product"})
+    List<Order> findWithGraphByStatus(OrderStatus status);
 
     List<Order> findByCustomerEmailAndStatusOrderByPlacedAtDesc(String email, OrderStatus status);
 

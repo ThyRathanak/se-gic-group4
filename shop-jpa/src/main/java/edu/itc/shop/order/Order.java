@@ -5,6 +5,7 @@ import edu.itc.shop.customer.Customer;
 import edu.itc.shop.domain.Money;
 import edu.itc.shop.product.Product;
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -43,6 +44,7 @@ public class Order {
     private long version;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 16)
     private List<OrderLine> lines = new ArrayList<>();
 
     protected Order() {

@@ -15,6 +15,10 @@ spring:
     properties:
       hibernate:
         generate_statistics: true
+        default_batch_fetch_size: 32
+        jdbc:
+          batch_size: 50
+        order_inserts: true
 
   h2:
     console:
@@ -24,3 +28,4 @@ logging:
   level:
     org.hibernate.SQL: DEBUG
     org.hibernate.orm.jdbc.bind: TRACE
+    org.hibernate.engine.jdbc.batch: TRACE
