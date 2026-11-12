@@ -27,3 +27,13 @@ The increment size of the [product_seq] sequence is set to [50] in the entity ma
 ```
 
 The migration has been restored to use the entity column `sku` and sequence increment size `50`.
+
+## Bidirectional `toString()` pitfall
+
+Temporarily adding `lines` to `Order.toString()` and `order` to `OrderLine.toString()`, then printing an order outside a transaction, reproduced this exception:
+
+```text
+java.lang.StackOverflowError
+```
+
+The two `toString()` methods were restored to include scalar fields only.

@@ -1,8 +1,10 @@
 
 package edu.itc.shop.product;
 
-import edu.itc.shop.common.Money;
+import edu.itc.shop.domain.Money;
 import jakarta.persistence.*;
+
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -73,5 +75,44 @@ public class Product {
 
   public int getStock() {
     return stock;
+  }
+
+  public Set<Tag> getTags() {
+    return Collections.unmodifiableSet(tags);
+  }
+
+  public void tag(Tag tag) {
+    if (tags.add(tag)) {
+      tag.addProduct(this);
+    }
+  }
+
+  @Override
+  public boolean equals(Object object) {
+    if (this == object) {
+      return true;
+    }
+    if (object == null || getClass() != object.getClass()) {
+      return false;
+    }
+    Product product = (Product) object;
+    return id != null && id.equals(product.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Product.class.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return "Product{" +
+        "id=" + id +
+        ", sku='" + sku + '\'' +
+        ", name='" + name + '\'' +
+        ", price=" + price +
+        ", category=" + category +
+        ", stock=" + stock +
+        '}';
   }
 }

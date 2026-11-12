@@ -1,7 +1,7 @@
 
 package edu.itc.shop.customer;
 
-import edu.itc.shop.common.Address;
+import edu.itc.shop.domain.Address;
 import jakarta.persistence.*;
 
 @Entity
@@ -27,7 +27,7 @@ public class Customer {
     private String email;
 
     @Embedded
-    private Address billingAddress;
+    private Address billing;
 
     @Embedded
     @AttributeOverrides({
@@ -40,11 +40,11 @@ public class Customer {
             column = @Column(name = "ship_city")
         ),
         @AttributeOverride(
-            name = "country",
-            column = @Column(name = "ship_country")
+            name = "zip",
+            column = @Column(name = "ship_zip")
         )
     })
-    private Address shippingAddress;
+    private Address shipping;
 
     protected Customer() {
     }
@@ -57,8 +57,8 @@ public class Customer {
     ) {
         this.name = name;
         this.email = email;
-        this.billingAddress = billingAddress;
-        this.shippingAddress = shippingAddress;
+        this.billing = billingAddress;
+        this.shipping = shippingAddress;
     }
 
     public Long getId() {
@@ -74,10 +74,38 @@ public class Customer {
     }
 
     public Address getBillingAddress() {
-        return billingAddress;
+        return billing;
     }
 
     public Address getShippingAddress() {
-        return shippingAddress;
+        return shipping;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (object == null || getClass() != object.getClass()) {
+            return false;
+        }
+        Customer customer = (Customer) object;
+        return id != null && id.equals(customer.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Customer.class.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "Customer{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", email='" + email + '\'' +
+                ", billing=" + billing +
+                ", shipping=" + shipping +
+                '}';
     }
 }
