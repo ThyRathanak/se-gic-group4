@@ -3,7 +3,9 @@ package edu.itc.shop.product;
 
 import edu.itc.shop.domain.Money;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Formula;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,6 +27,10 @@ public class Product {
 
   @Embedded
   private Money price;
+
+  // Exposes the embedded amount as a root property for Spring Data DTO projections.
+  @Formula("amount")
+  private BigDecimal amount;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
@@ -75,6 +81,10 @@ public class Product {
 
   public int getStock() {
     return stock;
+  }
+
+  public void setStock(int stock) {
+    this.stock = stock;
   }
 
   public Set<Tag> getTags() {

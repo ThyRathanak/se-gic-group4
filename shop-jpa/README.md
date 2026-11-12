@@ -37,3 +37,29 @@ java.lang.StackOverflowError
 ```
 
 The two `toString()` methods were restored to include scalar fields only.
+
+## Derived-query typo
+
+Temporarily misspelling `Email` as `Emali` in `OrderRepository` caused application startup to fail with this Spring Data error:
+
+```text
+Caused by: org.springframework.data.core.PropertyReferenceException: No property 'emali' found for type 'Customer'; Did you mean 'email'; Traversed path: Order.customer
+```
+
+The repository method name has been restored to `findByCustomerEmailAndStatusOrderByPlacedAtDesc`.
+
+## Detached entity merge
+
+In `OrderServiceTest`, changing a `Product` returned from `findById` did not alter the stored stock until `save(detachedProduct)` was called. The SQL logger captured one `SELECT` followed by one `UPDATE` for that save. Spring Data JPA uses `EntityManager.merge` for this detached entity; the returned managed copy is the instance attached to the persistence context.
+
+## Optimistic locking and retry
+
+`OrderFacade.changeStatusWithRetry` retries the transactional status change up to three times in a separate bean. In `OptimisticLockingTest`, one direct concurrent update loses the version race and rolls back; the facade version lets both threads eventually commit, incrementing the version twice.
+
+Captured from the test-profile logs:
+
+```text
+2026-11-12T21:40:30.458+07:00 TRACE 13064 --- [shop-jpa] [pool-3-thread-1] o.s.t.i.TransactionInterceptor : Getting transaction for [edu.itc.shop.service.OrderService.changeStatus]
+2026-11-12T21:40:30.464+07:00 DEBUG 13064 --- [shop-jpa] [pool-3-thread-2] org.hibernate.SQL : update orders set customer_id=?,placed_at=?,status=?,version=? where id=? and version=?
+2026-11-12T21:40:30.470+07:00 DEBUG 13064 --- [shop-jpa] [pool-3-thread-1] o.s.orm.jpa.JpaTransactionManager : Initiating transaction rollback after commit exception
+```
