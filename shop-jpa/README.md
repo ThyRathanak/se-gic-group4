@@ -1,33 +1,417 @@
-# Shop JPA schema validation
+# Lab 03: Hibernate Framework and Spring Data JPA
 
-## Startup validation
+## Step 1: Entities and Mappings – Schema Validation
 
-Run `./mvnw spring-boot:run`. Flyway applied the initial migration:
+### Objective
+Map the shop domain using JPA entities and embedded value objects. Use Flyway to create the database schema and Hibernate to validate that the entity mappings match the database.
 
-```text
-Successfully applied 1 migration to schema "PUBLIC", now at version v1 (execution time 00:00.013s)
+### Implementation
+- Configured Flyway to manage database migrations.
+- Configured Hibernate with `spring.jpa.hibernate.ddl-auto=validate`.
+- Set `spring.jpa.open-in-view=false`.
+- Created the initial migration `V1__init.sql`.
+- Used `@Embeddable` value objects and `@Enumerated(EnumType.STRING)` for enums.
+- Configured entity IDs using sequence generators with `allocationSize = 50`.
+
+### Testing and Evidence
+
+**1. Successful schema validation**
+
+Ran:
+
+```bash
+./mvnw spring-boot:run
 ```
 
-Hibernate initialized the `EntityManagerFactory` and the application started without a `SchemaManagementException`.
+Flyway successfully applied the initial migration:
 
-## Open EntityManager in View
+```text
+Successfully applied 1 migration to schema "PUBLIC",
+now at version v1
+```
 
-`spring.jpa.open-in-view=false` is set in `application.yaml`. In
-`OpenInViewTest`, a repository-loaded `Order` is detached once the repository
-transaction ends, and touching `getLines()` then throws
-`LazyInitializationException`. The real `GET /api/customers/{email}/orders`
-controller delegates to `OrderService.findByCustomerEmail`; that read-only
-transaction fetches lines and products and maps them into DTOs before returning.
-The test calls this controller method and verifies the line and product name
-are available in the response. Keep association traversal and DTO mapping in
-the service transaction when Open EntityManager in View is disabled.
+Hibernate initialized the `EntityManagerFactory`, and the application started without a `SchemaManagementException`.
 
-## V2 indexes
+**2. Deliberate schema mismatch: Rename `sku` to `code`**
 
-`V2__indexes.sql` adds `idx_orders_customer_placed`, `idx_order_line_order`,
-and `idx_product_category_amount`. On application startup, Flyway should log
-that it is migrating the `PUBLIC` schema to version 2 (`indexes`); verify the
-history in the H2 console with:
+Temporarily renamed the `sku` column to `code` in the migration SQL without changing the entity.
+
+Observed error:
+
+```text
+Schema validation: missing column [sku] in table [product]
+```
+
+This proves Hibernate validates entity columns against the database schema.
+
+**3. Deliberate sequence mismatch**
+
+Temporarily changed `product_seq` to `INCREMENT BY 1` instead of 50.
+
+Observed error:
+
+```text
+The increment size of the [product_seq] sequence is set to [50]
+in the entity mapping but the mapped database sequence
+increment size is [1]
+```
+
+Restored the migration to use `sku` and sequence increment size 50.
+
+### Conclusion
+Flyway manages database schema creation, while Hibernate validates the entity mappings. The deliberate errors demonstrate that incorrect column names and sequence configurations are detected during application startup.
+
+---
+
+## Step 2: Associations, Cascading and Entity Identity
+
+### Objective
+Implement relationships between entities, manage the lifecycle of order lines through the Order aggregate root, and ensure entity identity works correctly with Java collections and Hibernate.
+
+### Implementation
+The required relationships include:
+
+- `Order` to `OrderLine`: One-to-Many.
+- `OrderLine` to `Order`: Many-to-One.
+- `OrderLine` to `Product`: Many-to-One.
+- `Product` to `Tag`: Many-to-Many.
+- `Tag` to `Product`: Many-to-Many inverse relationship.
+
+The `Order` entity owns the lifecycle of its lines through cascading and orphan removal.
+
+### Testing and Evidence
+
+**1. Bidirectional association**
+
+The order and order-line relationship must keep both sides synchronized when adding or removing lines.
+
+**2. Cascade and orphan removal**
+
+The required test is `OrderCascadeTest`.
+
+It should demonstrate:
+- Persisting an order inserts its order lines.
+- Removing one line deletes that line from the database.
+- Removing an order also removes its remaining lines.
+
+**3. Entity identity**
+
+The required `EntityIdentityTest` verifies that:
+- A persisted entity remains accessible in a `HashSet`.
+- Two instances representing the same database entity are equal.
+- Two separately loaded instances are not necessarily the same Java object.
+
+**4. Bidirectional `toString()` pitfall**
+
+Temporarily added `lines` to `Order.toString()` and `order` to `OrderLine.toString()`.
+
+Printed an order outside a transaction and reproduced:
+
+```text
+java.lang.StackOverflowError
+```
+
+Restored both `toString()` methods to include scalar fields only.
+
+### Conclusion
+Bidirectional entity relationships must be managed carefully. Cascading and orphan removal simplify entity lifecycle management. Entity equality must also be implemented correctly to work with Java collections.
+
+Including bidirectional relationships in `toString()` can cause infinite recursion and a `StackOverflowError`.
+
+---
+
+## Step 3: Repositories, Queries, Projections and REST Endpoints
+
+### Objective
+Replace hand-written database access with Spring Data JPA repositories. Implement derived queries, JPQL, native SQL, projections, Specifications, and paginated REST endpoints.
+
+### Implementation
+
+The repository layer provides database operations using:
+
+- `CustomerRepository`
+- `ProductRepository`
+- `OrderRepository`
+
+Implemented or required query features include:
+
+1. Derived queries for customers, orders, and products.
+2. JPQL queries using `@Query`.
+3. Native SQL for low-stock products.
+4. Interface and record projections.
+5. Dynamic product filtering using `Specification`.
+6. Pagination and sorting.
+
+### Testing and Evidence
+
+**1. Derived-query typo**
+
+Temporarily misspelled `Email` as `Emali` in `OrderRepository`.
+
+Observed Spring Data startup error:
+
+```text
+Caused by: org.springframework.data.core.PropertyReferenceException:
+No property 'emali' found for type 'Customer';
+Did you mean 'email'; Traversed path: Order.customer
+```
+
+Restored the correct method:
+
+```java
+findByCustomerEmailAndStatusOrderByPlacedAtDesc
+```
+
+This demonstrates that Spring Data parses derived-query method names during application startup.
+
+**2. Open EntityManager in View**
+
+Configured:
+
+```yaml
+spring:
+  jpa:
+    open-in-view: false
+```
+
+In `OpenInViewTest`, a repository-loaded `Order` becomes detached after its repository transaction ends.
+
+Accessing `getLines()` afterward throws:
+
+```text
+LazyInitializationException
+```
+
+The actual customer-orders controller delegates to:
+
+```java
+OrderService.findByCustomerEmail(...)
+```
+
+The service uses a read-only transaction to fetch order lines and products and map them into DTOs before returning the response.
+
+The test calls the controller method and verifies that the order line and product name are available in the response.
+
+**3. REST endpoints**
+
+The lab requires three endpoints:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/orders` | Paginated orders filtered by status |
+| GET | `/api/products` | Products with dynamic filters and pagination |
+| GET | `/api/customers/{email}/orders` | Customer orders with their lines |
+
+The customer-orders endpoint performs association traversal and DTO mapping inside the service transaction.
+
+### Conclusion
+Spring Data JPA reduces manual database access through repository methods and query abstractions. Derived queries are validated during startup, projections reduce unnecessary data retrieval, and Specifications support dynamic filtering.
+
+With Open EntityManager in View disabled, lazy associations must be loaded and mapped inside the service transaction.
+
+---
+
+## Step 4: Entity States, Dirty Checking, Transactions and Optimistic Locking
+
+### Objective
+Understand managed and detached entity behavior, transaction boundaries, Hibernate dirty checking, flush ordering, and optimistic locking using concurrent transactions.
+
+### Implementation
+
+Implemented transaction management in the service layer using `@Transactional`.
+
+The application uses:
+- Managed entity updates.
+- Detached entity merging.
+- Read-only transactions.
+- Explicit flushing.
+- Optimistic locking with `@Version`.
+- Retry handling through a separate `OrderFacade` bean.
+
+### Testing and Evidence
+
+**1. Detached entity and merge**
+
+In `OrderServiceTest`, changing a `Product` returned from `findById` did not update the stored stock because the entity was detached.
+
+After calling:
+
+```java
+products.save(detachedProduct);
+```
+
+The stock change was persisted.
+
+The SQL logger captured:
+
+```text
+SELECT
+UPDATE
+```
+
+Spring Data JPA uses `EntityManager.merge()` for the detached entity.
+
+The returned managed copy is the instance attached to the persistence context.
+
+**2. Optimistic locking**
+
+Implemented:
+
+```java
+OrderFacade.changeStatusWithRetry(...)
+```
+
+The facade retries the transactional status change up to three times in a separate bean.
+
+In `OptimisticLockingTest`, two threads attempt to update the same order concurrently.
+
+One transaction loses the version race and rolls back. The facade retry allows both threads to eventually commit.
+
+The final version increases twice.
+
+**3. Transaction log evidence**
+
+Captured from the test-profile logs:
+
+```text
+2026-11-12T21:40:30.458+07:00 TRACE 13064
+--- [shop-jpa] [pool-3-thread-1]
+o.s.t.i.TransactionInterceptor :
+Getting transaction for
+[edu.itc.shop.service.OrderService.changeStatus]
+
+2026-11-12T21:40:30.464+07:00 DEBUG 13064
+--- [shop-jpa] [pool-3-thread-2]
+org.hibernate.SQL :
+update orders
+set customer_id=?,placed_at=?,status=?,version=?
+where id=? and version=?
+
+2026-11-12T21:40:30.470+07:00 DEBUG 13064
+--- [shop-jpa] [pool-3-thread-1]
+o.s.orm.jpa.JpaTransactionManager :
+Initiating transaction rollback after commit exception
+```
+
+### Conclusion
+Managed entities are automatically updated through Hibernate dirty checking. Detached entities require merging to persist their changes.
+
+Optimistic locking prevents lost updates by checking the entity version during updates. Retrying in a separate service bean allows failed transactions to be executed again safely.
+
+---
+
+## Step 5: N+1, Performance Tuning and a Second Migration
+
+### Objective
+Identify and fix N+1 query problems, measure database performance, enable JDBC insert batching, verify the effect of Open EntityManager in View, and add database indexes using Flyway V2.
+
+### Implementation
+
+**1. N+1 query problem**
+
+Implemented `NPlusOneTest` to measure prepared-statement counts for report queries.
+
+The test warms each report once, then measures 20 calls and calculates the median execution time.
+
+The report uses 50 orders with 3 lines each. Product entities are unique per order line, so accessing product names also exposes lazy-loading queries.
+
+**2. N+1 solutions**
+
+Compared four approaches:
+
+- Naive implementation with collection and product batch fetching.
+- Fetch join for order lines.
+- Entity graph for order lines and products.
+- Batch fetching.
+
+Actual statement counts from the report:
+
+| Variant | Statements | Median ms |
+|---|---:|---:|
+| Naive + collection/product batch fetching | 10 | Pending |
+| Fetch join for lines | 6 | Pending |
+| Entity graph for lines and products | 1 | Pending |
+| Batch fetching | 10 | Pending |
+
+The original 51-statement baseline was measured before collection batching and product-name access.
+
+**3. Product-name regression**
+
+Fetching order lines alone does not fetch their products.
+
+When the report accesses:
+
+```java
+line.getProduct().getName()
+```
+
+additional product queries can occur.
+
+With:
+
+```yaml
+spring:
+  jpa:
+    properties:
+      hibernate:
+        default_batch_fetch_size: 32
+```
+
+Hibernate groups lazy product loading into batches.
+
+For 150 unique products:
+
+```text
+ceil(150 / 32) = 5 statements
+```
+
+The entity graph loads both associations in a single query.
+
+**4. JDBC insert batching**
+
+Configured:
+
+```yaml
+spring:
+  jpa:
+    properties:
+      hibernate:
+        jdbc.batch_size: 50
+        order_inserts: true
+```
+
+`BatchInsertTest` inserts 1,000 products inside one transaction and checks Hibernate's entity insert and prepared-statement counters.
+
+Enabled batch logging:
+
+```yaml
+logging:
+  level:
+    org.hibernate.engine.jdbc.batch: TRACE
+```
+
+The identity-generator comparison belongs on a scratch branch. Changing the product ID strategy to `GenerationType.IDENTITY` disables insert batching and should increase the prepared-statement count toward 1,000.
+
+The active entity mapping remains sequence-based with allocation size 50.
+
+**5. Flyway V2 indexes**
+
+Created `V2__indexes.sql` with three indexes:
+
+```sql
+CREATE INDEX idx_orders_customer_placed
+    ON orders (customer_id, placed_at DESC);
+
+CREATE INDEX idx_order_line_order
+    ON order_line (order_id);
+
+CREATE INDEX idx_product_category_amount
+    ON product (category, amount);
+```
+
+On startup, Flyway should migrate the schema to version 2.
+
+Verified the migration history using:
 
 ```sql
 SELECT installed_rank, version, description, success
@@ -35,115 +419,61 @@ FROM flyway_schema_history
 ORDER BY installed_rank;
 ```
 
-Expected: two successful rows, versions 1 and 2. Capture the actual H2 plans
-for the paginated `/api/orders?status=PAID&page=0&size=20&sort=placedAt,desc`
-query in the console with this equivalent SQL before and after V2:
+Expected: two successful migration records, versions 1 and 2.
+
+**6. EXPLAIN query plans**
+
+Used the following SQL to inspect the paginated orders query:
 
 ```sql
 EXPLAIN SELECT o.id, o.status, o.placed_at, c.name
-FROM orders o JOIN customer c ON c.id = o.customer_id
+FROM orders o
+JOIN customer c ON c.id = o.customer_id
 WHERE o.status = 'PAID'
 ORDER BY o.placed_at DESC
 OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY;
 ```
 
-```text
-Before V2: pending capture from a running H2 database.
-After V2:  pending capture from a running H2 database.
-```
-
-The orders endpoint filters on `status`, while the customer/placed index starts
-with `customer_id`; H2 may therefore still scan and sort for this global status
-query. The customer-specific orders query can use the new composite index. Do
-not treat a plan as improved until the captured H2 output confirms it.
-
-## Deliberate schema mismatches
-
-These messages were captured by changing only the migration SQL for each run, then restoring it.
-
-### Rename `sku` to `code` in SQL only
+Results:
 
 ```text
-Schema validation: missing column [sku] in table [product]
+Before V2: Pending capture from a running H2 database.
+
+After V2: Pending capture from a running H2 database.
 ```
 
-### Set `product_seq` to `INCREMENT BY 1`
+The orders query filters by `status`, while the new customer/placed index starts with `customer_id`.
 
-```text
-The increment size of the [product_seq] sequence is set to [50] in the entity mapping but the mapped database sequence increment size is [1]
-```
+Therefore, H2 may still scan and sort for the global status query. The customer-specific orders query can use the new composite index.
 
-The migration has been restored to use the entity column `sku` and sequence increment size `50`.
+The actual query plans must be captured before claiming an improvement.
 
-## Bidirectional `toString()` pitfall
+### Conclusion
+N+1 problems can be reduced using fetch joins, entity graphs, and batch fetching. Entity graphs can load multiple required associations in a single query.
 
-Temporarily adding `lines` to `Order.toString()` and `order` to `OrderLine.toString()`, then printing an order outside a transaction, reproduced this exception:
+JDBC batching reduces database insert overhead, while Flyway V2 introduces indexes to support frequently used queries.
 
-```text
-java.lang.StackOverflowError
-```
+Actual query plans and measured execution times are important evidence when evaluating database performance.
 
-The two `toString()` methods were restored to include scalar fields only.
+---
 
-## N+1 report measurements
+## Final Lab 03 Summary
 
-`NPlusOneTest` warms each report once, then measures 20 calls and prints the
-median wall time and prepared-statement count. Products are unique per order
-line so reading `line.getProduct().getName()` exposes lazy product loading.
-With 50 orders, 3 lines each, `@BatchSize(16)` on `Order.lines`, and
-`hibernate.default_batch_fetch_size=32`, the expected statement counts are:
+Lab 03 demonstrates how Hibernate ORM and Spring Data JPA manage database persistence in a Spring Boot application.
 
-| variant | statements | median ms |
-|---|---:|---:|
-| naive + collection/product batch fetching | 10 | pending local test run |
-| fetch join for lines | 6 | pending local test run |
-| entity graph for lines and products | 1 | pending local test run |
-| batch fetching | 10 | pending local test run |
+The five tasks cover:
 
-The original 51-statement baseline predates collection batching and product
-name access. Fetching lines
-alone still regresses when the report touches products: the fetch-join version
-uses additional product selects. A default batch size of 32 groups those lazy
-product loads into `ceil(150 / 32) = 5` statements; the entity graph loads both
-associations in its single query. The test prints measured medians prefixed
-with `N+1 median:`; copy those values into the table after running
-`./mvnw -Dtest=NPlusOneTest test`.
+1. Entity mapping and schema validation using Flyway.
+2. Entity relationships, cascading, and identity.
+3. Spring Data repositories, queries, projections, and REST endpoints.
+4. Entity states, dirty checking, transactions, and optimistic locking.
+5. N+1 optimization, JDBC batching, and database indexing.
 
-## JDBC insert batching
+The report uses application startup logs, SQL statements, automated tests, and database execution plans to demonstrate the behavior of Hibernate and Spring Data JPA.
 
-The application enables `hibernate.jdbc.batch_size=50` and
-`hibernate.order_inserts=true`. `BatchInsertTest` inserts 1,000 products in
-one transaction, then checks Hibernate's entity insert and prepared-statement
-counters. Hibernate's batch logger is enabled at TRACE under
-`org.hibernate.engine.jdbc.batch`.
-
-The identity-generator comparison belongs on a scratch branch: changing
-`Product` to `GenerationType.IDENTITY` disables insert batching and should
-raise the prepared-statement counter toward 1,000. The active entity mapping
-remains sequence-based with allocation size 50.
-
-## Derived-query typo
-
-Temporarily misspelling `Email` as `Emali` in `OrderRepository` caused application startup to fail with this Spring Data error:
-
-```text
-Caused by: org.springframework.data.core.PropertyReferenceException: No property 'emali' found for type 'Customer'; Did you mean 'email'; Traversed path: Order.customer
-```
-
-The repository method name has been restored to `findByCustomerEmailAndStatusOrderByPlacedAtDesc`.
-
-## Detached entity merge
-
-In `OrderServiceTest`, changing a `Product` returned from `findById` did not alter the stored stock until `save(detachedProduct)` was called. The SQL logger captured one `SELECT` followed by one `UPDATE` for that save. Spring Data JPA uses `EntityManager.merge` for this detached entity; the returned managed copy is the instance attached to the persistence context.
-
-## Optimistic locking and retry
-
-`OrderFacade.changeStatusWithRetry` retries the transactional status change up to three times in a separate bean. In `OptimisticLockingTest`, one direct concurrent update loses the version race and rolls back; the facade version lets both threads eventually commit, incrementing the version twice.
-
-Captured from the test-profile logs:
-
-```text
-2026-11-12T21:40:30.458+07:00 TRACE 13064 --- [shop-jpa] [pool-3-thread-1] o.s.t.i.TransactionInterceptor : Getting transaction for [edu.itc.shop.service.OrderService.changeStatus]
-2026-11-12T21:40:30.464+07:00 DEBUG 13064 --- [shop-jpa] [pool-3-thread-2] org.hibernate.SQL : update orders set customer_id=?,placed_at=?,status=?,version=? where id=? and version=?
-2026-11-12T21:40:30.470+07:00 DEBUG 13064 --- [shop-jpa] [pool-3-thread-1] o.s.orm.jpa.JpaTransactionManager : Initiating transaction rollback after commit exception
-```
+**Remaining evidence to complete:**
+- Step 2: Include `OrderCascadeTest` and `EntityIdentityTest` results and SQL excerpts.
+- Step 3: Include `OrderRepositoryTest` results and the three HTTP endpoint transcripts.
+- Step 5: Fill in the actual median timings.
+- Step 5: Capture the actual H2 EXPLAIN plans before and after V2.
+- Step 5: Include the actual `BatchInsertTest` results and batching log.
