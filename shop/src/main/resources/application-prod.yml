@@ -1,0 +1,18 @@
+spring:
+  h2:
+    console:
+      enabled: false
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+logging:
+  level:
+    root: INFO
+    edu.itc.shop: INFO
+
+shop:
+  currency: USD
+  tax-rate: 0.10
+  low-stock-threshold: 5
