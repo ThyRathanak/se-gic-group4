@@ -21,12 +21,12 @@ class ProductServiceTest {
 
     @Test
     void restockRollsBackWhenSourceHasTooLittleStock() {
-        int before1 = repo.findById(1).orElseThrow().stock();
-        int before2 = repo.findById(2).orElseThrow().stock();
+        int before1 = repo.findById(1).orElseThrow().getStock();
+        int before2 = repo.findById(2).orElseThrow().getStock();
 
         assertThrows(InsufficientStockException.class, () -> service.restock(1, 2, 1_000));
 
-        assertEquals(before1, repo.findById(1).orElseThrow().stock());
-        assertEquals(before2, repo.findById(2).orElseThrow().stock());
+        assertEquals(before1, repo.findById(1).orElseThrow().getStock());
+        assertEquals(before2, repo.findById(2).orElseThrow().getStock());
     }
 }

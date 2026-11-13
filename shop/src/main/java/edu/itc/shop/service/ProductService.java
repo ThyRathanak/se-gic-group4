@@ -63,11 +63,11 @@ public class ProductService {
 
             if (delta < 0) {
                 throw new InsufficientStockException(
-                        "Insufficient stock for product: " + product.name());
+                        "Insufficient stock for product: " + product.getName());
             }
 
             throw new IllegalStateException(
-                    "Could not update stock for product: " + product.name());
+                    "Could not update stock for product: " + product.getName());
         }
 
         return getById(id);
