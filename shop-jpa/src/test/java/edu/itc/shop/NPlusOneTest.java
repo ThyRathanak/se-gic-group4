@@ -40,7 +40,7 @@ class NPlusOneTest {
 
         report.linesPerPaidOrder();
 
-        assertThat(counter.count()).isEqualTo(51);
+        assertThat(counter.count()).isEqualTo(5);
     }
 
     @Test

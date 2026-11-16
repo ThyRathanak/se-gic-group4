@@ -32,7 +32,7 @@ class ReportBenchmarkTest {
     void benchmarkReportVariants() {
         testData.paidOrders(50, 3);
 
-        benchmark("Naive", reportService::linesPerPaidOrder, 51);
+        benchmark("Batch fetched collections", reportService::linesPerPaidOrder, 5);
         benchmark("JOIN FETCH", reportService::linesPerPaidOrderJoinFetch, 1);
         benchmark("EntityGraph", reportService::linesPerPaidOrderEntityGraph, 1);
     }

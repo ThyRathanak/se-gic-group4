@@ -1,6 +1,7 @@
 package edu.itc.shop.domain;
 
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -113,15 +114,24 @@ public class Order {
     }
 
     public Money total() {
-        Money total = Money.eur("0");
-
-        for (OrderLine line : lines) {
-            total = total.plus(
-                line.getUnitPrice().times(line.getQuantity())
-            );
+        if (lines.isEmpty()) {
+            return Money.eur("0.00");
         }
 
-        return total;
+        String currency = lines.get(0).getUnitPrice().currency();
+        BigDecimal amount = BigDecimal.ZERO;
+
+        for (OrderLine line : lines) {
+            Money unitPrice = line.getUnitPrice();
+            if (!currency.equals(unitPrice.currency())) {
+                throw new IllegalStateException(
+                    "Cannot total order lines with different currencies"
+                );
+            }
+            amount = amount.add(unitPrice.times(line.getQuantity()).amount());
+        }
+
+        return new Money(amount, currency);
     }
 
     public Long getId() {

@@ -23,7 +23,7 @@ public class ReportService {
 
     @Transactional(readOnly = true)
     public Map<Long, Integer> linesPerPaidOrder() {
-        List<Order> paidOrders = orders.findByStatusWithLines(OrderStatus.PAID);
+        List<Order> paidOrders = orders.findByStatus(OrderStatus.PAID);
 
         Map<Long, Integer> result = new LinkedHashMap<>();
 

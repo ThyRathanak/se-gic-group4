@@ -16,6 +16,8 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import jakarta.persistence.SequenceGenerator;
+import org.hibernate.annotations.Formula;
+import java.math.BigDecimal;
 
 @Entity
 public class Product {
@@ -37,6 +39,9 @@ public class Product {
 
     @Embedded
     private Money price;
+
+    @Formula("amount")
+    private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -102,6 +107,10 @@ public class Product {
 
     public Money getPrice() {
         return price;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
     }
 
     public Category getCategory() {

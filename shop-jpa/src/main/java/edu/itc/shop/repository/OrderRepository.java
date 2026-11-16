@@ -15,6 +15,8 @@ import org.springframework.data.jpa.repository.EntityGraph;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
+    List<Order> findByStatus(OrderStatus status);
+
     List<Order> findByCustomerEmailAndStatusOrderByPlacedAtDesc(
             String email,
             OrderStatus status

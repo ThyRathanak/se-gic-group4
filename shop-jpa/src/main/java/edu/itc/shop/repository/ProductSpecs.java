@@ -1,6 +1,9 @@
 package edu.itc.shop.repository;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 import org.springframework.data.jpa.domain.Specification;
 
@@ -14,10 +17,11 @@ public final class ProductSpecs {
     }
 
     public static Specification<Product> nameContains(String q) {
+        String pattern = "%" + q.toLowerCase(Locale.ROOT) + "%";
         return (root, query, cb) ->
                 cb.like(
                         cb.lower(root.<String>get("name")),
-                        "%" + q.toLowerCase() + "%"
+                        pattern
                 );
     }
 
@@ -28,7 +32,7 @@ public final class ProductSpecs {
 
     public static Specification<Product> cheaperThan(BigDecimal max) {
         return (root, query, cb) ->
-                cb.le(
+                cb.lessThanOrEqualTo(
                         root.<Money>get("price").<BigDecimal>get("amount"),
                         max
                 );
@@ -45,11 +49,12 @@ public final class ProductSpecs {
             BigDecimal maxPrice,
             Boolean inStock
     ) {
-        return Specification.allOf(
-                q == null || q.isBlank() ? null : nameContains(q),
-                category == null ? null : inCategory(category),
-                maxPrice == null ? null : cheaperThan(maxPrice),
-                inStock == null || !inStock ? null : inStock()
-        );
+        List<Specification<Product>> filters = new ArrayList<>();
+        if (q != null && !q.isBlank()) filters.add(nameContains(q));
+        if (category != null) filters.add(inCategory(category));
+        if (maxPrice != null) filters.add(cheaperThan(maxPrice));
+        if (Boolean.TRUE.equals(inStock)) filters.add(inStock());
+        if (Boolean.FALSE.equals(inStock)) filters.add(Specification.not(inStock()));
+        return Specification.allOf(filters);
     }
 }

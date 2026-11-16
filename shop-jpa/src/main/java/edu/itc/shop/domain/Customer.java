@@ -85,7 +85,15 @@ public class Customer {
         return billing;
     }
 
+    public Address getBillingAddress() {
+        return billing;
+    }
+
     public Address getShipping() {
+        return shipping;
+    }
+
+    public Address getShippingAddress() {
         return shipping;
     }
 }
