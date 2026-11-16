@@ -27,4 +27,5 @@ logging:
   level:
     org.hibernate.SQL: WARN
     org.hibernate.orm.jdbc.bind: WARN
-    org.hibernate.engine.jdbc.batch: WARN
+    org.hibernate.engine.jdbc.batch: TRACE
+    org.hibernate.orm.jdbc.batch: TRACE
