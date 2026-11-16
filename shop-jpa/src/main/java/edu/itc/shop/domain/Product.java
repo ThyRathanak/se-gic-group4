@@ -1,44 +1,45 @@
 package edu.itc.shop.domain;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-
 import jakarta.persistence.Column;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "product")
 public class Product {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "product_seq")
-    @SequenceGenerator(name = "product_seq", sequenceName = "product_seq", allocationSize = 50)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "product_seq_gen")
+    @SequenceGenerator(
+        name = "product_seq_gen",
+        sequenceName = "product_seq",
+        allocationSize = 50
+    )
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 20)
+    @Column(nullable = false, unique = true)
     private String sku;
 
-    @Column(nullable = false, length = 120)
+    @Column(nullable = false)
     private String name;
 
     @Embedded
     private Money price;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false)
     private Category category;
 
     @Column(nullable = false)
@@ -46,45 +47,34 @@ public class Product {
 
     @ManyToMany
     @JoinTable(
-            name = "product_tag",
-            joinColumns = @JoinColumn(name = "product_id"),
-            inverseJoinColumns = @JoinColumn(name = "tag_id"))
+        name = "product_tag",
+        joinColumns = @JoinColumn(name = "product_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
     private Set<Tag> tags = new HashSet<>();
 
-    protected Product() { }
+    protected Product() {
+    }
 
-    public Product(String sku, String name, Money price, Category category) {
+    public Product(String sku, String name, Money price, Category category, int stock) {
         this.sku = sku;
         this.name = name;
         this.price = price;
         this.category = category;
-        this.stock = 0;
+        this.stock = stock;
     }
 
-    public Long getId() { return id; }
-    public String getSku() { return sku; }
-    public String getName() { return name; }
-    public Money getPrice() { return price; }
-    public Category getCategory() { return category; }
-    public int getStock() { return stock; }
-
-    public Set<Tag> getTags() { return Collections.unmodifiableSet(tags); }
-
-    public void setName(String name) { this.name = name; }
-    public void setPrice(Money price) { this.price = price; }
-    public void setStock(int stock) { this.stock = stock; }
-
-    public void tag(Tag tag) {
-        Objects.requireNonNull(tag, "tag");
-        if (tags.add(tag)) {
-            tag.addProduct(this);
-        }
+    public Product(String sku, String name, Money price, Category category) {
+        this(sku, name, price, category, 0);
     }
 
     @Override
-    public boolean equals(Object other) {
-        return this == other || (other != null && getClass() == other.getClass()
-                && id != null && id.equals(((Product) other).id));
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Product other = (Product) o;
+        return id != null && id.equals(other.id);
     }
 
     @Override
@@ -95,6 +85,56 @@ public class Product {
     @Override
     public String toString() {
         return "Product[id=%s, sku=%s, name=%s, price=%s, category=%s, stock=%d]"
-                .formatted(id, sku, name, price, category, stock);
+            .formatted(id, sku, name, price, category, stock);
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getSku() {
+        return sku;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Money getPrice() {
+        return price;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public int getStock() {
+        return stock;
+    }
+
+    public Set<Tag> getTags() {
+        return Collections.unmodifiableSet(tags);
+    }
+
+    public void tag(Tag tag) {
+        Objects.requireNonNull(tag, "tag");
+        if (tags.add(tag)) {
+            tag.addProduct(this);
+        }
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setPrice(Money price) {
+        this.price = price;
+    }
+
+    public void setStock(int stock) {
+        if (stock < 0) {
+            throw new IllegalArgumentException("stock cannot be negative");
+        }
+        this.stock = stock;
     }
 }

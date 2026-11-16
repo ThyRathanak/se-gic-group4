@@ -1,18 +1,35 @@
 package edu.itc.shop.domain;
 
-import java.math.BigDecimal;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
-@Embeddable 
+import java.math.BigDecimal;
+
+@Embeddable
 public record Money(
-    @Column(name = "amount", nullable = false, precision =12, scale =2 ) BigDecimal amount,
-    @Column (name = "currency", nullable = false, length = 3) String currency) {
-        public static Money eur(String value){
-            return new Money(new BigDecimal(value), "EUR");
+    @Column(nullable = false, precision = 12, scale = 2)
+    BigDecimal amount,
+
+    @Column(nullable = false, columnDefinition = "CHAR(3)")
+    String currency
+) {
+
+    public static Money eur(String amount) {
+        return new Money(new BigDecimal(amount), "EUR");
+    }
+
+    public Money times(int multiplier) {
+        return new Money(
+            amount.multiply(BigDecimal.valueOf(multiplier)),
+            currency
+        );
+    }
+
+    public Money plus(Money other) {
+        if (!currency.equals(other.currency)) {
+            throw new IllegalArgumentException("Currencies must match");
         }
 
-        public Money times(int qty){
-            return new Money(this.amount.multiply(BigDecimal.valueOf(qty)), this.currency);
-        }
-} 
+        return new Money(amount.add(other.amount), currency);
+    }
+}

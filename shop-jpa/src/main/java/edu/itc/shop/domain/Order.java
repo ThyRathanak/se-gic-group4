@@ -20,38 +20,64 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import org.hibernate.annotations.BatchSize;
+
 @Entity
 @Table(name = "orders")
 public class Order {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "orders_seq")
-    @SequenceGenerator(name = "orders_seq", sequenceName = "orders_seq", allocationSize = 50)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "order_seq_gen")
+    @SequenceGenerator(
+        name = "order_seq_gen",
+        sequenceName = "order_seq",
+        allocationSize = 50
+    )
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "customer_id")
+    @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private OrderStatus status = OrderStatus.NEW;
+    private OrderStatus status;
 
     @Column(name = "placed_at", nullable = false)
-    private Instant placedAt = Instant.now();
+    private Instant placedAt;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 16)
+    @OneToMany(
+        mappedBy = "order",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
     private List<OrderLine> lines = new ArrayList<>();
 
-   
     @Version
     private long version;
 
     protected Order() {
     }
 
-    public Order(Customer customer) {
-        this.customer = customer;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Order other = (Order) o;
+        return id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Order.class.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "Order[id=%s, status=%s, placedAt=%s]"
+            .formatted(id, status, placedAt);
     }
 
     public Order(Customer customer, OrderStatus status, Instant placedAt) {
@@ -60,16 +86,25 @@ public class Order {
         this.placedAt = placedAt;
     }
 
+    public Order(Customer customer) {
+        this(customer, OrderStatus.NEW, Instant.now());
+    }
+
     public OrderLine addLine(Product product, int quantity) {
-        OrderLine line = new OrderLine(this, product, quantity, product.getPrice());
+        OrderLine line = new OrderLine(
+            this,
+            product,
+            quantity,
+            product.getPrice()
+        );
+
         lines.add(line);
         return line;
     }
 
     public void removeLine(OrderLine line) {
-        int index = lines.indexOf(line);
-        if (index >= 0) {
-            lines.remove(index).setOrder(null);
+        if (lines.remove(line)) {
+            line.setOrder(null);
         }
     }
 
@@ -78,19 +113,15 @@ public class Order {
     }
 
     public Money total() {
-        Money total = null;
+        Money total = Money.eur("0");
+
         for (OrderLine line : lines) {
-            Money lineTotal = line.getUnitPrice().times(line.getQuantity());
-            if (total == null) {
-                total = lineTotal;
-            } else {
-                if (!total.currency().equals(lineTotal.currency())) {
-                    throw new IllegalStateException("Cannot total order lines with different currencies");
-                }
-                total = new Money(total.amount().add(lineTotal.amount()), total.currency());
-            }
+            total = total.plus(
+                line.getUnitPrice().times(line.getQuantity())
+            );
         }
-        return total == null ? Money.eur("0") : total;
+
+        return total;
     }
 
     public Long getId() {
@@ -115,21 +146,5 @@ public class Order {
 
     public void setStatus(OrderStatus status) {
         this.status = status;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        return this == other || (other != null && getClass() == other.getClass()
-                && id != null && id.equals(((Order) other).id));
-    }
-
-    @Override
-    public int hashCode() {
-        return Order.class.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return "Order[id=%s, status=%s, placedAt=%s, version=%d]".formatted(id, status, placedAt, version);
     }
 }
