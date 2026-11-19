@@ -9,13 +9,20 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class InMemoryProductRepository implements ProductRepository {
 
-    private final ConcurrentHashMap<Long, Product> products = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Product> products =
+            new ConcurrentHashMap<>();
+
     private final AtomicLong ids = new AtomicLong();
 
     public InMemoryProductRepository() {
-        save(new Product(0, "Kettle", "KT-01", new BigDecimal("24.90"), 12, 0));
-        save(new Product(0, "Mug", "MG-01", new BigDecimal("6.50"), 40, 0));
-        save(new Product(0, "Tea", "TE-01", new BigDecimal("4.20"), 0, 0));
+        save(new Product(0, "Kettle", "KT-01",
+                new BigDecimal("24.90"), 12, 0));
+
+        save(new Product(0, "Mug", "MG-01",
+                new BigDecimal("6.50"), 40, 0));
+
+        save(new Product(0, "Tea", "TE-01",
+                new BigDecimal("4.20"), 0, 0));
     }
 
     @Override
@@ -33,16 +40,29 @@ public class InMemoryProductRepository implements ProductRepository {
     @Override
     public Optional<Product> findBySku(String sku) {
         return products.values().stream()
-                .filter(p -> p.sku().equals(sku))
+                .filter(product -> product.sku().equals(sku))
                 .findFirst();
     }
 
     @Override
     public Product save(Product product) {
-        long id = product.id() == 0 ? ids.incrementAndGet() : product.id();
-        Product saved = new Product(id, product.name(), product.sku(),
-                product.price(), product.stock(), product.version() + 1);
+        long id = product.id() == 0
+                ? ids.incrementAndGet()
+                : product.id();
+
+        ids.accumulateAndGet(id, Math::max);
+
+        Product saved = new Product(
+                id,
+                product.name(),
+                product.sku(),
+                product.price(),
+                product.stock(),
+                product.version() + 1
+        );
+
         products.put(id, saved);
+
         return saved;
     }
 
