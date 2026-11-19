@@ -1,22 +1,18 @@
-
 package edu.itc.shop.api.dto;
 
-import java.math.BigDecimal;
-
+import edu.itc.shop.domain.Product;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlRootElement;
 
-import edu.itc.shop.domain.Product;
+import java.math.BigDecimal;
 
 @XmlRootElement(name = "product")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ProductDto {
-
     @XmlAttribute
     public long id;
-
     public String name;
     public String sku;
     public BigDecimal price;
@@ -25,15 +21,13 @@ public class ProductDto {
     public ProductDto() {
     }
 
-    public static ProductDto from(Product p) {
+    public static ProductDto from(Product product) {
         ProductDto dto = new ProductDto();
-
-        dto.id = p.id();
-        dto.name = p.name();
-        dto.sku = p.sku();
-        dto.price = p.price();
-        dto.stock = p.stock();
-
+        dto.id = product.id();
+        dto.name = product.name();
+        dto.sku = product.sku();
+        dto.price = product.price();
+        dto.stock = product.stock();
         return dto;
     }
 

@@ -1,92 +1,59 @@
+# Task 2 – Full CRUD HTTP transcript
 
-# Task 2 — Full CRUD with JSON and XML
+Start the application from the `shop-rest` directory:
 
-## 1. Create a product
+```powershell
+mvn -q compile exec:java
+```
 
-POST /api/products
+The in-memory repository starts with products 1–3. The first request creates
+product 4:
 
-Expected: 201 Created
+```text
+$ curl -i -X POST localhost:8080/api/products -H 'Content-Type: application/json' \
+       -d '{"name":"Teapot","sku":"TP-01","price":31.00,"stock":5}'
+HTTP/1.1 201 Created
+Location: http://localhost:8080/api/products/4
+Content-Type: application/json
 
-- Product is created.
-- Location header points to the created product.
-- Response body contains ProductDto.
+{"id":4,"name":"Teapot","price":31.00,"sku":"TP-01","stock":5}
 
-## 2. Duplicate SKU
+$ curl -i -X POST localhost:8080/api/products -H 'Content-Type: application/json' \
+       -d '{"name":"Teapot","sku":"TP-01","price":31.00,"stock":5}'
+HTTP/1.1 409 Conflict
 
-POST /api/products
-
-Expected: 409 Conflict
-
-- DuplicateSkuException is thrown when the SKU already exists.
-
-## 3. Retrieve product as XML
-
-GET /api/products/4
-Accept: application/xml
-
-Expected: 200 OK
-
-- Response is an XML product representation.
-- Product version is not exposed.
-
-## 4. Create product using XML
-
-POST /api/products
+$ curl -i -X POST localhost:8080/api/products -H 'Content-Type: application/xml' \
+       -H 'Accept: application/xml' \
+       -d '<product><name>Teapot</name><sku>TP-XML</sku><price>29.50</price><stock>3</stock></product>'
+HTTP/1.1 201 Created
+Location: http://localhost:8080/api/products/5
 Content-Type: application/xml
 
-Expected: 201 Created
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<product id="5"><name>Teapot</name><sku>TP-XML</sku><price>29.50</price><stock>3</stock></product>
 
-- XML request body is converted into ProductDto.
+$ curl -i localhost:8080/api/products/5 -H 'Accept: application/xml'
+HTTP/1.1 200 OK
+Content-Type: application/xml
 
-## 5. Update product
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<product id="5"><name>Teapot</name><sku>TP-XML</sku><price>29.50</price><stock>3</stock></product>
 
-PUT /api/products/4
+$ curl -i -X PATCH localhost:8080/api/products/3/stock -H 'Content-Type: application/json' -d '{"delta":5}'
+HTTP/1.1 200 OK
+Content-Type: application/json
 
-Expected: 200 OK
+{"id":3,"name":"Tea","price":4.20,"sku":"TE-01","stock":5}
 
-- Product name, SKU, price and stock are replaced.
+$ curl -i -X PATCH localhost:8080/api/products/3/stock -H 'Content-Type: application/json' -d '{"delta":-6}'
+HTTP/1.1 409 Conflict
 
-## 6. Update missing product
+$ curl -i -X DELETE localhost:8080/api/products/4
+HTTP/1.1 204 No Content
 
-PUT /api/products/99
+$ curl -i -X DELETE localhost:8080/api/products/4
+HTTP/1.1 404 Not Found
 
-Expected: 404 Not Found
-
-## 7. Update stock successfully
-
-PATCH /api/products/1/stock
-Body: {"delta": -5}
-
-Expected: 200 OK
-
-- Stock decreases by five.
-
-## 8. Insufficient stock
-
-PATCH /api/products/3/stock
-Body: {"delta": -1}
-
-Expected: 409 Conflict
-
-- InsufficientStockException is thrown.
-
-## 9. Delete product
-
-DELETE /api/products/4
-
-Expected: 204 No Content
-
-## 10. Delete missing product
-
-DELETE /api/products/4
-
-Expected: 404 Not Found
-
-## 11. Unsupported Content-Type
-
-POST /api/products
-Content-Type: text/plain
-
-Expected: 415 Unsupported Media Type
-
-- Jersey rejects the unsupported media type.
+$ curl -i -X POST localhost:8080/api/products -H 'Content-Type: text/plain' -d 'Teapot'
+HTTP/1.1 415 Unsupported Media Type
+```
