@@ -6,6 +6,6 @@ import jakarta.ws.rs.core.Response;
 public class DuplicateSkuException extends ClientErrorException {
 
     public DuplicateSkuException(String sku) {
-        super(Response.Status.CONFLICT);
+        super("A product with SKU '" + sku + "' already exists", Response.Status.CONFLICT);
     }
 }

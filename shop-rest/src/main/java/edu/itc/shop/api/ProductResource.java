@@ -125,19 +125,26 @@ public class ProductResource {
     }
 
     @PUT
-    @Path("{id: \\d+}")
-    public ProductDto update(
-        @PathParam("id") long id,
-        @Valid @NotNull ProductDto dto) {
+    @Path("/{id}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response update(
+            @PathParam("id") long id,
+            @Valid @NotNull ProductDto dto) {
+
         Product existing = repo.findById(id)
-                .orElseThrow(() ->
-                        new NotFoundException("Product " + id + " not found"));
+                .orElseThrow(() -> new NotFoundException("Product not found"));
 
-        Product updated = repo.save(
-                dto.toProduct(id, existing.version())
-        );
+        repo.findBySku(dto.sku)
+                .filter(p -> p.id() != id)
+                .ifPresent(p -> {
+                    throw new DuplicateSkuException(dto.sku);
+                });
 
-        return ProductDto.from(updated);
+        Product updated = dto.toProduct(id, existing.version() + 1);
+        repo.save(updated);
+
+        return Response.ok(ProductDto.from(updated)).build();
     }
 
     @DELETE
@@ -152,33 +159,37 @@ public class ProductResource {
     }
 
     @PATCH
-    @Path("{id: \\d+}/stock")
+    @Path("/{id}/stock")
     @Consumes(MediaType.APPLICATION_JSON)
-    public ProductDto changeStock(
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response changeStock(
             @PathParam("id") long id,
             @Valid @NotNull StockChange change) {
 
         Product existing = repo.findById(id)
-                .orElseThrow(() ->
-                        new NotFoundException("Product " + id + " not found"));
+                .orElseThrow(() -> new NotFoundException("Product not found"));
 
         int newStock = existing.stock() + change.delta();
 
         if (newStock < 0) {
-            throw new InsufficientStockException();
+            throw new InsufficientStockException(
+                    id,
+                    existing.stock(),
+                    change.delta()
+            );
         }
 
-        Product updated = repo.save(
-                new Product(
-                        existing.id(),
-                        existing.name(),
-                        existing.sku(),
-                        existing.price(),
-                        newStock,
-                        existing.version()
-                )
+        Product updated = new Product(
+                existing.id(),
+                existing.name(),
+                existing.sku(),
+                existing.price(),
+                newStock,
+                existing.version() + 1
         );
 
-        return ProductDto.from(updated);
+        repo.save(updated);
+
+        return Response.ok(ProductDto.from(updated)).build();
     }
 }

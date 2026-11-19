@@ -5,7 +5,9 @@ import jakarta.ws.rs.core.Response;
 
 public class InsufficientStockException extends ClientErrorException {
 
-    public InsufficientStockException() {
-        super(Response.Status.CONFLICT);
+    public InsufficientStockException(long productId, int currentStock, int delta) {
+        super("Cannot change stock for product " + productId
+                + " by " + delta + "; current stock is " + currentStock,
+                Response.Status.CONFLICT);
     }
 }
