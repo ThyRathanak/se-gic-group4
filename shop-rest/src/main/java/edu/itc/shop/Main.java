@@ -9,6 +9,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 
 import edu.itc.shop.domain.InMemoryProductRepository;
 import edu.itc.shop.domain.ProductRepository;
+import edu.itc.shop.domain.ReviewRepository;
 
 public class Main {
 
@@ -24,6 +25,8 @@ public class Main {
                     protected void configure() {
                         bind(new InMemoryProductRepository())
                                 .to(ProductRepository.class);
+                        bind(new ReviewRepository())
+                                .to(ReviewRepository.class);
                     }
                 });
     }
