@@ -1,5 +1,7 @@
 package edu.itc.shop.api.params;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.QueryParam;
@@ -19,6 +21,17 @@ public class ProductFilter {
     @QueryParam("inStock")
     @DefaultValue("false")
     public boolean inStock;
+
+    @QueryParam("page")
+    @DefaultValue("0")
+    @Min(0)
+    public int page;
+
+    @QueryParam("size")
+    @DefaultValue("20")
+    @Min(1)
+    @Max(100)
+    public int size;
 
     @QueryParam("sort")
     @DefaultValue("name,asc")
