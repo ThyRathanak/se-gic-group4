@@ -1,5 +1,11 @@
 # Task 4 – HTTP Filters, Security and Compression
 
+## Contributor
+
+Step 4 — HTTP Filters and Interceptors
+
+Completed by: Makara
+
 ## 1. Overview
 
 This task improves the Shop REST API by implementing request tracking, CORS support, API-key authentication, and gzip response compression.

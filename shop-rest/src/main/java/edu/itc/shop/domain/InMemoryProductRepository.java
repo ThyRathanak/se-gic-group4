@@ -23,6 +23,13 @@ public class InMemoryProductRepository implements ProductRepository {
 
         save(new Product(0, "Tea", "TE-01",
                 new BigDecimal("4.20"), 0, 0));
+
+        for (int i = 1; i <= 30; i++) {
+            String suffix = String.format("%02d", i);
+            save(new Product(0, "Sample Product " + suffix, "SP-" + suffix,
+                    new BigDecimal("10.00").add(BigDecimal.valueOf(i)),
+                    i % 5 == 0 ? 0 : i, 0));
+        }
     }
 
     @Override
