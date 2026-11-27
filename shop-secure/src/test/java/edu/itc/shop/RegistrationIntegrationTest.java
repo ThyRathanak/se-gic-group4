@@ -12,14 +12,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import edu.itc.shop.domain.UserAccount;
 import edu.itc.shop.repository.UserAccountRepository;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -41,7 +42,7 @@ class RegistrationIntegrationTest {
 	}
 
 	@Test
-	void registrationStoresBcryptAndEnablesHttpBasic() throws Exception {
+	void registrationStoresBcryptAndAuthenticatesWithBearerToken() throws Exception {
 		String username = "secure_user_" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12);
 		String password = "Correct-Horse-9";
 
@@ -57,7 +58,16 @@ class RegistrationIntegrationTest {
 		assertTrue(saved.getPasswordHash().startsWith("{bcrypt}$2"));
 		assertTrue(encoder.matches(password, saved.getPasswordHash()));
 
-		mvc.perform(get("/api/me").with(SecurityMockMvcRequestPostProcessors.httpBasic(username, password)))
+		MvcResult login = mvc.perform(post("/api/auth/login")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
+				.andExpect(status().isOk())
+				.andReturn();
+		String token = new ObjectMapper()
+				.readTree(login.getResponse().getContentAsString())
+				.get("token").asText();
+
+		mvc.perform(get("/api/me").header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.name").value(username))
 				.andExpect(jsonPath("$.roles", hasItem("ROLE_CUSTOMER")));

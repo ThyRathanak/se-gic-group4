@@ -5,10 +5,14 @@ spring:
   profiles:
     default: dev
 
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} [rid=%X{rid:-}] - %msg%n"
+
 shop:
   seed:
-    admin-password: ${SHOP_SEED_ADMIN_PASSWORD:DevAdminPass123}
-    customer-password: ${SHOP_SEED_CUSTOMER_PASSWORD:DevCustomerPass123}
+    admin-password: ${SHOP_SEED_ADMIN_PASSWORD}
+    customer-password: ${SHOP_SEED_CUSTOMER_PASSWORD}
   security:
-    jwt-secret: ${JWT_SECRET}
+    jwt-secret: ${JWT_SECRET:}
     access-token-ttl: 15m

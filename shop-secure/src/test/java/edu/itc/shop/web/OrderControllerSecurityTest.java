@@ -14,9 +14,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jwt.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.security.oauth2.jwt.BadJwtException;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -93,7 +93,7 @@ class OrderControllerSecurityTest {
     @Test
     void malformedBearerTokenReturnsProblemJson() throws Exception {
         when(jwtDecoder.decode(anyString()))
-                .thenThrow(new JwtException("Malformed token"));
+                .thenThrow(new BadJwtException("Malformed token"));
 
         mvc.perform(post("/api/orders/1/ship")
                         .header("Authorization", "Bearer invalid-token"))

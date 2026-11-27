@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Reviews for product ${productId}|">Product reviews</title>
+</head>
+<body>
+<main>
+    <h1 th:text="|Reviews for product ${productId}|">Product reviews</h1>
+    <p th:if="${#lists.isEmpty(reviews)}">No reviews yet.</p>
+    <article th:each="review : ${reviews}">
+        <h2>
+            <span th:text="${review.stars}">5</span> stars
+            by <span th:text="${review.username}">alice</span>
+        </h2>
+        <p th:text="${review.text}">Review text</p>
+    </article>
+</main>
+</body>
+</html>
