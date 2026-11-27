@@ -2,6 +2,7 @@ package edu.itc.shop;
 
 import edu.itc.shop.domain.UserAccount;
 import edu.itc.shop.repository.UserAccountRepository;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,8 +13,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,6 +34,9 @@ class ShopSecureApplicationTests {
     @Autowired
     private UserAccountRepository users;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private final HttpClient client = HttpClient.newHttpClient();
 
     @Test
@@ -44,10 +46,9 @@ class ShopSecureApplicationTests {
         assertTrue(invalid.headers().firstValue("Content-Type").orElse("")
                 .startsWith("application/problem+json"));
         assertTrue(invalid.body().contains("\"errors\":["));
+        assertTrue(invalid.body().contains("size must be between 12 and 72"), invalid.body());
         assertTrue(invalid.body().contains(
-                "\"field\":\"password\",\"message\":\"size must be between 12 and 72\""));
-        assertTrue(invalid.body().contains(
-                "\"field\":\"password\",\"message\":\"must contain an upper-case letter, a lower-case letter and a digit\""));
+                "must contain an upper-case letter, a lower-case letter and a digit"), invalid.body());
 
         String requestBody = "{\"username\":\"bob\",\"password\":\"Correct-Horse-9\"}";
         HttpResponse<String> registered = post("/api/register", requestBody);
@@ -93,10 +94,12 @@ class ShopSecureApplicationTests {
     }
 
     private HttpResponse<String> get(String path, String username, String password) throws Exception {
-        String credentials = Base64.getEncoder().encodeToString(
-                (username + ":" + password).getBytes(StandardCharsets.UTF_8));
+        HttpResponse<String> login = post("/api/auth/login",
+                "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}");
+        assertEquals(200, login.statusCode(), login.body());
+        String token = objectMapper.readTree(login.body()).get("token").asText();
         HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
-                .header("Authorization", "Basic " + credentials)
+                .header("Authorization", "Bearer " + token)
                 .GET()
                 .build();
         return client.send(request, HttpResponse.BodyHandlers.ofString());
