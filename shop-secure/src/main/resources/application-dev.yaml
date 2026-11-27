@@ -1,0 +1,9 @@
+spring:
+  h2:
+    console:
+      enabled: true
+
+shop:
+  seed:
+    admin-password: ${SHOP_SEED_ADMIN_PASSWORD:Admin-Dev-Only-123}
+    customer-password: ${SHOP_SEED_CUSTOMER_PASSWORD:Customer-Dev-Only-123}

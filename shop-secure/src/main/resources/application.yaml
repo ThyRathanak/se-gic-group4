@@ -1,9 +1,14 @@
 spring:
   application:
     name: shop-secure
+<<<<<<< HEAD
 
 # Development defaults only. Override both values using external configuration in production.
 shop:
   seed:
     admin-password: ${SHOP_SEED_ADMIN_PASSWORD:DevAdminPass123}
     customer-password: ${SHOP_SEED_CUSTOMER_PASSWORD:DevCustomerPass123}
+=======
+  profiles:
+    default: dev
+>>>>>>> c306d842e6c3e092f8cb14bf9e0f3aef3dacc19c
