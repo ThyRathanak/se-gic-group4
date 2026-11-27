@@ -1,8 +1,10 @@
 package edu.itc.shop.web;
 
 import edu.itc.shop.repository.ProductRepository;
+import edu.itc.shop.repository.UserAccountRepository;
 import edu.itc.shop.service.AccountService;
 import edu.itc.shop.config.SecurityConfig;
+import edu.itc.shop.config.MethodSecurityConfig;
 import edu.itc.shop.service.OrderService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(OrderController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, MethodSecurityConfig.class})
 class OrderControllerSecurityTest {
 
     @Autowired
@@ -29,6 +31,9 @@ class OrderControllerSecurityTest {
 
     @MockitoBean
     ProductRepository products;
+
+    @MockitoBean
+    UserAccountRepository users;
 
     @MockitoBean
     AccountService accounts;
