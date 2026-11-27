@@ -1,11 +1,14 @@
+
 spring:
   application:
     name: shop-secure
   profiles:
     default: dev
 
-# Development defaults only. Override both values using external configuration in production.
 shop:
   seed:
     admin-password: ${SHOP_SEED_ADMIN_PASSWORD:DevAdminPass123}
     customer-password: ${SHOP_SEED_CUSTOMER_PASSWORD:DevCustomerPass123}
+  security:
+    jwt-secret: ${JWT_SECRET}
+    access-token-ttl: 15m

@@ -12,9 +12,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+
 import java.util.Set;
 
 @SpringBootApplication
+
+@ConfigurationPropertiesScan
 public class ShopSecureApplication {
 
 	@Bean
