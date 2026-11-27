@@ -10,9 +10,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 import java.io.IOException;
@@ -24,6 +21,7 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain api(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/register").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
@@ -37,13 +35,6 @@ public class SecurityConfig {
                         .authenticationEntryPoint(SecurityConfig::unauthorized)
                         .accessDeniedHandler(SecurityConfig::forbidden));
         return http.build();
-    }
-
-    @Bean
-    UserDetailsService temporaryUsers() {           // removed in Task 2
-        return new InMemoryUserDetailsManager(
-                User.withUsername("admin").password("{noop}admin").roles("ADMIN").build(),
-                User.withUsername("alice").password("{noop}alice").roles("CUSTOMER").build());
     }
 
     /** 401: not logged in (or wrong password). */

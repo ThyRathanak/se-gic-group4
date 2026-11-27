@@ -50,3 +50,26 @@ Pragma: no-cache
 Expires: 0
 X-Frame-Options: DENY
 ```
+
+# Task 2 – Database users and registration
+
+The registration integration test queried the H2 `users` table after creating `bob`:
+
+```text
+ID  USERNAME  PASSWORD_HASH                                                   ENABLED
+3   bob       {bcrypt}$2a$10$4AT.auNos2xOE0DMUL8h4O.cx1w9L1VKEDv6nwFP.uyvLpdvb8/RS  TRUE
+```
+
+```text
+$ curl -i -X POST localhost:8080/api/register -H 'Content-Type: application/json' \
+  -d '{"username":"bob","password":"Correct-Horse-9"}'
+HTTP/1.1 201
+{"username":"bob"}
+
+$ curl -i -u bob:Correct-Horse-9 localhost:8080/api/me
+HTTP/1.1 200
+{"name":"bob","roles":["ROLE_CUSTOMER"]}
+```
+
+The checked-in seed-password values are development-only; override them with
+`SHOP_SEED_ADMIN_PASSWORD` and `SHOP_SEED_CUSTOMER_PASSWORD` outside development.

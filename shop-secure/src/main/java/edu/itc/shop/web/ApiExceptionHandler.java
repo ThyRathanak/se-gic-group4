@@ -1,15 +1,14 @@
 package edu.itc.shop.web;
 
 import edu.itc.shop.service.ProductNotFoundException;
+import edu.itc.shop.service.UsernameTakenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -25,10 +24,21 @@ public class ApiExceptionHandler {
     ProblemDetail invalid(MethodArgumentNotValidException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
         problem.setTitle("Bad Request");
-        Map<String, String> errors = ex.getBindingResult().getFieldErrors().stream()
-                .collect(Collectors.toMap(FieldError::getField,
-                        e -> String.valueOf(e.getDefaultMessage()), (a, b) -> a));
+        List<FieldValidationError> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> new FieldValidationError(error.getField(),
+                        String.valueOf(error.getDefaultMessage())))
+                .toList();
         problem.setProperty("errors", errors);
         return problem;
+    }
+
+    @ExceptionHandler(UsernameTakenException.class)
+    ProblemDetail usernameTaken(UsernameTakenException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Conflict");
+        return problem;
+    }
+
+    private record FieldValidationError(String field, String message) {
     }
 }
